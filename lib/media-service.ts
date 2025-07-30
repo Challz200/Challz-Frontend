@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { storage, db, isFirebaseConfigured } from "./firebase"
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
-=======
-import { db, isFirebaseConfigured } from "./firebase"
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
 import {
   collection,
   addDoc,
@@ -16,14 +12,13 @@ import {
   getDocs,
   where,
   Timestamp,
-<<<<<<< HEAD
-=======
   limit,
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
 } from "firebase/firestore"
 import { v4 as uuidv4 } from "uuid"
 
+
 export type MediaType = "video" | "image" | "audio"
+
 
 export interface MediaItem {
   id: string
@@ -44,11 +39,8 @@ export interface MediaItem {
   challengeTitle?: string
 }
 
-<<<<<<< HEAD
-// Mock data for when Firebase is not configured
-=======
+
 // Mock data for when Firebase is not configured or has permission issues
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
 const mockMediaData: MediaItem[] = [
   {
     id: "1",
@@ -97,10 +89,6 @@ const mockMediaData: MediaItem[] = [
     comments: 28,
     createdAt: Timestamp.now(),
   },
-<<<<<<< HEAD
-]
-
-=======
   {
     id: "4",
     userId: "demo-user-4",
@@ -133,6 +121,7 @@ const mockMediaData: MediaItem[] = [
   },
 ]
 
+
 // Check if we can access Firestore
 async function canAccessFirestore(): Promise<boolean> {
   if (!isFirebaseConfigured() || !db) {
@@ -150,11 +139,12 @@ async function canAccessFirestore(): Promise<boolean> {
   }
 }
 
+
 // Cloudinary config (deberás poner tu cloud_name y upload_preset en .env.local)
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
 
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
+
 export async function uploadMedia(
   file: File,
   userId: string,
@@ -169,7 +159,6 @@ export async function uploadMedia(
     challengeTitle?: string
   },
 ) {
-<<<<<<< HEAD
   if (!isFirebaseConfigured() || !storage || !db) {
     throw new Error("Firebase no está configurado. Por favor configura las variables de entorno.")
   }
@@ -237,101 +226,68 @@ export async function uploadMedia(
   }
 }
 
-export async function getTrendingMedia(type: "views" | "likes" | "comments", limit = 10) {
-  if (!isFirebaseConfigured() || !db) {
-    // Return mock data when Firebase is not configured
-    return mockMediaData.sort((a, b) => b[type] - a[type]).slice(0, limit)
-  }
 
-  try {
-    const mediaQuery = query(collection(db, "media"), orderBy(type, "desc"), limit(limit))
-
-    const snapshot = await getDocs(mediaQuery)
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as MediaItem)
-  } catch (error) {
-    console.error(`Error getting trending media by ${type}:`, error)
-    // Fallback to mock data
-    return mockMediaData.sort((a, b) => b[type] - a[type]).slice(0, limit)
-  }
+// Subida directa a Cloudinary
+if (!CLOUDINARY_UPLOAD_URL || !CLOUDINARY_UPLOAD_PRESET) {
+  throw new Error("Cloudinary no está configurado correctamente.")
 }
 
-export async function getRecentMedia(limit = 10) {
-  if (!isFirebaseConfigured() || !db) {
-    // Return mock data when Firebase is not configured
-    return mockMediaData.slice(0, limit)
-  }
+const formData = new FormData()
+formData.append("file", file)
+formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET)
+formData.append("folder", `${userId}/${metadata.type}`)
 
-  try {
-    const mediaQuery = query(collection(db, "media"), orderBy("createdAt", "desc"), limit(limit))
+// Puedes agregar más metadatos si lo deseas
 
-    const snapshot = await getDocs(mediaQuery)
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as MediaItem)
-  } catch (error) {
-    console.error("Error getting recent media:", error)
-    // Fallback to mock data
-    return mockMediaData.slice(0, limit)
-=======
-  // Subida directa a Cloudinary
-  if (!CLOUDINARY_UPLOAD_URL || !CLOUDINARY_UPLOAD_PRESET) {
-    throw new Error("Cloudinary no está configurado correctamente.")
-  }
-
-  const formData = new FormData()
-  formData.append("file", file)
-  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET)
-  formData.append("folder", `${userId}/${metadata.type}`)
-
-  // Puedes agregar más metadatos si lo deseas
-
-  let uploadResponse
-  try {
-    uploadResponse = await fetch(CLOUDINARY_UPLOAD_URL, {
-      method: "POST",
-      body: formData,
-    })
-  } catch (err) {
-    throw new Error("Error subiendo archivo a Cloudinary: " + err)
-  }
-
-  if (!uploadResponse.ok) {
-    const errorText = await uploadResponse.text();
-    throw new Error("Error en la respuesta de Cloudinary: " + errorText);
-  }
-
-  const uploadResult = await uploadResponse.json()
-  const downloadURL = uploadResult.secure_url
-  const thumbnailUrl = uploadResult.thumbnail_url || uploadResult.secure_url
-
-  // Registro en Firestore (igual que antes)
-  try {
-    const mediaData: Omit<MediaItem, "id"> = {
-      userId,
-      username,
-      userPhotoURL: userPhotoURL || undefined,
-      title: metadata.title,
-      description: metadata.description,
-      mediaUrl: downloadURL,
-      thumbnailUrl,
-      type: metadata.type,
-      hashtags: metadata.hashtags,
-      likes: 0,
-      views: 0,
-      comments: 0,
-      createdAt: Timestamp.now(),
-      ...(metadata.challengeId && { challengeId: metadata.challengeId }),
-      ...(metadata.challengeTitle && { challengeTitle: metadata.challengeTitle }),
-    }
-
-    const docRef = await addDoc(collection(db, "media"), mediaData)
-    const userRef = doc(db, "users", userId)
-    await updateDoc(userRef, {
-      media: arrayUnion(docRef.id),
-    })
-    return { id: docRef.id, ...mediaData }
-  } catch (error) {
-    throw new Error("Error registrando media en Firestore: " + error)
-  }
+let uploadResponse
+try {
+  uploadResponse = await fetch(CLOUDINARY_UPLOAD_URL, {
+    method: "POST",
+    body: formData,
+  })
+} catch (err) {
+  throw new Error("Error subiendo archivo a Cloudinary: " + err)
 }
+
+if (!uploadResponse.ok) {
+  const errorText = await uploadResponse.text();
+  throw new Error("Error en la respuesta de Cloudinary: " + errorText);
+}
+
+const uploadResult = await uploadResponse.json()
+const downloadURL = uploadResult.secure_url
+const thumbnailUrl = uploadResult.thumbnail_url || uploadResult.secure_url
+
+// Registro en Firestore (igual que antes)
+try {
+  const mediaData: Omit<MediaItem, "id"> = {
+    userId,
+    username,
+    userPhotoURL: userPhotoURL || undefined,
+    title: metadata.title,
+    description: metadata.description,
+    mediaUrl: downloadURL,
+    thumbnailUrl,
+    type: metadata.type,
+    hashtags: metadata.hashtags,
+    likes: 0,
+    views: 0,
+    comments: 0,
+    createdAt: Timestamp.now(),
+    ...(metadata.challengeId && { challengeId: metadata.challengeId }),
+    ...(metadata.challengeTitle && { challengeTitle: metadata.challengeTitle }),
+  }
+
+  const docRef = await addDoc(collection(db, "media"), mediaData)
+  const userRef = doc(db, "users", userId)
+  await updateDoc(userRef, {
+    media: arrayUnion(docRef.id),
+  })
+  return { id: docRef.id, ...mediaData }
+} catch (error) {
+  throw new Error("Error registrando media en Firestore: " + error)
+}
+
 
 export async function getTrendingMedia(type: "views" | "likes" | "comments", limitCount = 10) {
   const hasAccess = await canAccessFirestore()
@@ -361,6 +317,7 @@ export async function getTrendingMedia(type: "views" | "likes" | "comments", lim
   }
 }
 
+
 export async function getRecentMedia(limitCount = 10) {
   const hasAccess = await canAccessFirestore()
 
@@ -384,51 +341,34 @@ export async function getRecentMedia(limitCount = 10) {
     console.warn("Error getting recent media:", error.message)
     // Fallback to mock data
     return mockMediaData.slice(0, limitCount)
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
   }
 }
 
+
 export async function getUserMedia(userId: string) {
-<<<<<<< HEAD
-  if (!isFirebaseConfigured() || !db) {
-    // Return empty array when Firebase is not configured
-=======
   const hasAccess = await canAccessFirestore()
 
   if (!hasAccess) {
     // Return empty array when Firebase is not accessible
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
     return []
   }
 
   try {
     const mediaQuery = query(collection(db, "media"), where("userId", "==", userId), orderBy("createdAt", "desc"))
-<<<<<<< HEAD
-
-    const snapshot = await getDocs(mediaQuery)
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as MediaItem)
-  } catch (error) {
-    console.error("Error getting user media:", error)
-=======
     const snapshot = await getDocs(mediaQuery)
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as MediaItem)
   } catch (error: any) {
     console.warn("Error getting user media:", error.message)
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
     return []
   }
 }
 
+
 export async function incrementMediaStats(mediaId: string, field: "views" | "likes" | "comments") {
-<<<<<<< HEAD
-  if (!isFirebaseConfigured() || !db) {
-    console.warn("Firebase not configured, skipping stats increment")
-=======
   const hasAccess = await canAccessFirestore()
 
   if (!hasAccess) {
     console.warn("Firebase not accessible, skipping stats increment")
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
     return
   }
 
@@ -437,12 +377,7 @@ export async function incrementMediaStats(mediaId: string, field: "views" | "lik
     await updateDoc(mediaRef, {
       [field]: increment(1),
     })
-<<<<<<< HEAD
-  } catch (error) {
-    console.error(`Error incrementing ${field} for media ${mediaId}:`, error)
-=======
   } catch (error: any) {
     console.warn(`Error incrementing ${field} for media ${mediaId}:`, error.message)
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
   }
 }
