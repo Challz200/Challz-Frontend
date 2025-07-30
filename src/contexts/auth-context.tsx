@@ -31,7 +31,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const login = async (email: string, password: string) => {
-    // Llama a tu backend para autenticar y obtener token/usuario
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
