@@ -1,8 +1,5 @@
 "use client"
-<<<<<<< HEAD
 
-import { Heart, MessageCircle, Plus, Search, Share2, ChevronUp, Music, Bookmark, Eye, TrendingUp } from "lucide-react"
-=======
 import type React from "react"
 import {
   Heart,
@@ -17,7 +14,6 @@ import {
   Bookmark,
   MessageSquare,
 } from "lucide-react"
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -29,8 +25,6 @@ import { useAuth } from "@/contexts/auth-context"
 import { getTrendingMedia, type MediaItem } from "@/lib/media-service"
 import { useRouter } from "next/navigation"
 
-<<<<<<< HEAD
-=======
 interface InteractiveButtonProps {
   icon: React.ElementType
   count: string | number
@@ -61,7 +55,6 @@ function InteractiveButton({
   )
 }
 
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
 export default function Home() {
   const { user, isConfigured } = useAuth()
   const router = useRouter()
@@ -82,10 +75,6 @@ export default function Home() {
         setLoading(false)
       }
     }
-<<<<<<< HEAD
-
-=======
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
     fetchTrendingMedia()
   }, [])
 
@@ -123,8 +112,6 @@ export default function Home() {
     }
   }
 
-<<<<<<< HEAD
-=======
   const handleChatClick = () => {
     if (!isConfigured) {
       router.push("/env-setup")
@@ -141,7 +128,6 @@ export default function Home() {
     return null
   }
 
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
@@ -206,13 +192,8 @@ export default function Home() {
         </div>
       </div>
 
-<<<<<<< HEAD
-      {/* Main Content - TikTok Style */}
-      <main className="flex-1 relative" onClick={handleSwipeUp}>
-=======
       {/* Main Content - TikTok Style - AJUSTADO PADDING BOTTOM */}
       <main className="flex-1 relative pb-24" onClick={handleSwipeUp}>
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
         {/* Full Screen Video Background */}
         <div className="absolute inset-0 bg-zinc-900">
           {loading || trendingMedia.length === 0 ? (
@@ -277,63 +258,6 @@ export default function Home() {
           )}
         </div>
 
-<<<<<<< HEAD
-        {/* TikTok-style Right Side Controls */}
-        <div className="absolute right-4 bottom-32 z-10 flex flex-col items-center gap-6">
-          <button onClick={handleProfileClick}>
-            <div className="flex flex-col items-center">
-              <Avatar className="h-12 w-12 border-2 border-white">
-                <AvatarImage
-                  src={user?.photoURL || "/placeholder.svg?height=48&width=48"}
-                  alt={user?.displayName || "@user"}
-                />
-                <AvatarFallback>{user?.displayName?.charAt(0) || "U"}</AvatarFallback>
-              </Avatar>
-              <div className="mt-1 bg-purple-600 rounded-full h-5 w-5 flex items-center justify-center absolute -bottom-1">
-                <Plus className="h-3 w-3 text-white" />
-              </div>
-            </div>
-          </button>
-
-          <div className="flex flex-col items-center">
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md h-12 w-12">
-              <Heart className="h-7 w-7" />
-            </Button>
-            <span className="text-xs mt-1">{currentMedia?.likes || 0}</span>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md h-12 w-12">
-              <MessageCircle className="h-7 w-7" />
-            </Button>
-            <span className="text-xs mt-1">{currentMedia?.comments || 0}</span>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md h-12 w-12">
-              <Eye className="h-7 w-7" />
-            </Button>
-            <span className="text-xs mt-1">{currentMedia?.views || 0}</span>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md h-12 w-12">
-              <Bookmark className="h-7 w-7" />
-            </Button>
-            <span className="text-xs mt-1">Guardar</span>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md h-12 w-12">
-              <Share2 className="h-7 w-7" />
-            </Button>
-            <span className="text-xs mt-1">Compartir</span>
-          </div>
-        </div>
-
-        {/* Bottom Content Info */}
-        <div className="absolute bottom-0 left-0 right-16 p-4 z-10">
-=======
         {/* Right Side Controls - AJUSTADO POSICIÓN */}
         <div className="absolute right-3 bottom-36 sm:bottom-40 z-10 flex flex-col items-center gap-3">
           {/* Like Button */}
@@ -396,7 +320,6 @@ export default function Home() {
 
         {/* Bottom Content Info - AJUSTADO POSICIÓN */}
         <div className="absolute bottom-24 sm:bottom-28 left-0 right-12 p-4 z-10">
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
           {activeTab === "challenge" ? (
             <div>
               <Badge className="mb-2 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30">RETO DEL DÍA</Badge>
@@ -430,11 +353,7 @@ export default function Home() {
                   {!isConfigured ? "Configurar Firebase" : "Aceptar Reto"}
                 </Button>
                 <Link href="/reto/1">
-<<<<<<< HEAD
-                  <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">
-=======
                   <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent">
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
                     Ver Respuestas
                   </Button>
                 </Link>
@@ -482,28 +401,17 @@ export default function Home() {
           )}
         </div>
 
-<<<<<<< HEAD
-        {/* Swipe Up Indicator */}
-        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center animate-bounce">
-=======
         {/* Swipe Up Indicator - AJUSTADO POSICIÓN */}
         <div className="absolute bottom-32 sm:bottom-36 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center animate-bounce">
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
           <p className="text-xs text-zinc-400 mb-1">Desliza hacia arriba</p>
           <ChevronUp className="h-4 w-4 text-zinc-400" />
         </div>
       </main>
 
-<<<<<<< HEAD
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-t border-zinc-800">
-        <div className="flex items-center justify-around p-3">
-=======
       {/* Bottom Navigation - AJUSTADO PARA MOSTRAR TODOS LOS BOTONES */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-t border-zinc-800">
         <div className="flex items-center justify-around p-3 pb-6 sm:pb-3">
           {/* Home Button */}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
           <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-2">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -516,26 +424,8 @@ export default function Home() {
             </svg>
             <span className="text-xs">Inicio</span>
           </Button>
-<<<<<<< HEAD
-          <Link href="/trending">
-            <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-2 text-zinc-500">
-              <TrendingUp className="h-5 w-5" />
-              <span className="text-xs">Tendencias</span>
-            </Button>
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-full h-14 w-14 flex items-center justify-center shadow-lg"
-            onClick={handleCreateClick}
-          >
-            <Plus className="h-7 w-7" />
-          </Button>
-=======
 
-          {/* Chat Button */}
           {/* Profile Button */}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
           <button onClick={handleProfileClick}>
             <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-2 text-zinc-500">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -557,8 +447,6 @@ export default function Home() {
               <span className="text-xs">Perfil</span>
             </Button>
           </button>
-<<<<<<< HEAD
-=======
 
           {/* Create Button */}
           <Button
@@ -570,7 +458,6 @@ export default function Home() {
             <Plus className="h-7 w-7" />
           </Button>
 
-          {/* Profile Button */}
           {/* Chat Button */}
           <Button
             variant="ghost"
@@ -582,7 +469,6 @@ export default function Home() {
           </Button>
 
           {/* Alerts Button */}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
           <Link href="/alertas">
             <Button variant="ghost" className="flex flex-col items-center gap-1 h-auto py-2 text-zinc-500">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
