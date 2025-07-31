@@ -1,10 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
-import {
-  onAuthStateChanged,
-  updateProfile,
-  sendPasswordResetEmail,
-} from "firebase/auth"
-import { auth, isFirebaseConfigured } from "@/lib/firebase"
 
 interface User {
   id: string
@@ -16,10 +10,10 @@ interface User {
 interface AuthContextType {
   user: User | null
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, username: string) => Promise<void>
+  signUp: (username: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
-  uploadImage: (file: File) => Promise<string> // ejemplo para subir imagen
+  uploadImage: (file: File) => Promise<string>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,58 +22,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    if (!isFirebaseConfigured) return
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          id: firebaseUser.uid,
-          username: firebaseUser.displayName || "",
-          email: firebaseUser.email || "",
-          // Mapear otros campos si es necesario
-        })
-      } else {
+    // Intenta obtener el usuario actual en el inicio de la app
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/auth/me")
+        if (res.ok) {
+          const data = await res.json()
+          setUser(data.user)
+        } else {
+          setUser(null)
+        }
+      } catch {
         setUser(null)
       }
-    })
-    return () => unsubscribe()
+    }
+
+    fetchUser()
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    await auth.signInWithEmailAndPassword(email, password)
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.message || "Fallo al iniciar sesión")
+    }
+    const data = await res.json()
+    setUser(data.user)
+    // Puedes guardar token en localStorage o cookie si tu backend da uno
   }
 
-  const signUp = async (email: string, password: string, username: string) => {
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password)
-    if (auth.currentUser) {
-      await updateProfile(auth.currentUser, { displayName: username })
-      // Actualizar el estado local con el nuevo usuario con nombre
-      setUser({
-        id: userCredential.user.uid,
-        username,
-        email: userCredential.user.email || "",
-      })
+  const signUp = async (username: string, email: string, password: string) => {
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password }),
+    })
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.message || "Fallo al registrarse")
     }
+    const data = await res.json()
+    setUser(data.user)
   }
 
   const logout = async () => {
-    await auth.signOut()
+    await fetch("/api/auth/logout", { method: "POST" })
     setUser(null)
+    // Limpia token local si hay
   }
 
   const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email)
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.message || "Fallo al enviar solicitud de cambio de contraseña")
+    }
+    // Puedes mostrar mensaje de éxito según UX
   }
 
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append("file", file)
     formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "")
-    formData.append("folder", "tu_carpeta")
+    formData.append("folder", "tu_carpeta") // Cambia el nombre si quieres
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`, {
-      method: "POST",
-      body: formData,
-    })
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    )
 
     if (!res.ok) throw new Error("Error al subir imagen a Cloudinary")
 
