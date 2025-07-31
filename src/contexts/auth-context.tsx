@@ -1,4 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
+import {
+  onAuthStateChanged,
+  updateProfile,
+  sendPasswordResetEmail,
+} from "firebase/auth"
+import { auth, isFirebaseConfigured } from "@/lib/firebase"
 
 interface User {
   id: string
@@ -9,10 +15,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<void>
-  logout: () => void
-  signup: (username: string, email: string, password: string) => Promise<void>
-  uploadImage: (file: File) => Promise<string> // retorna URL en Cloudinary
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string, username: string) => Promise<void>
+  logout: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
+  uploadImage: (file: File) => Promise<string> // ejemplo para subir imagen
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -20,42 +27,47 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
 
-  // Opcional: carga el usuario desde tu backend cuando la app inicia
   useEffect(() => {
-    async function fetchUser() {
-      // Ejemplo: fetch('/api/auth/me') para obtener usuario logueado
-      // const res = await fetch('/api/auth/me')
-      // si está autenticado: setUser(data)
-    }
-    fetchUser()
+    if (!isFirebaseConfigured) return
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          id: firebaseUser.uid,
+          username: firebaseUser.displayName || "",
+          email: firebaseUser.email || "",
+          // Mapear otros campos si es necesario
+        })
+      } else {
+        setUser(null)
+      }
+    })
+    return () => unsubscribe()
   }, [])
 
-  const login = async (email: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-    if (!res.ok) throw new Error("Error en login")
-    const data = await res.json()
-    setUser(data.user)
-    // Guarda token si usas (localStorage, cookie, etc)
+  const signIn = async (email: string, password: string) => {
+    await auth.signInWithEmailAndPassword(email, password)
   }
 
-  const signup = async (username: string, email: string, password: string) => {
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password }),
-    })
-    if (!res.ok) throw new Error("Error en signup")
-    const data = await res.json()
-    setUser(data.user)
+  const signUp = async (email: string, password: string, username: string) => {
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password)
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, { displayName: username })
+      // Actualizar el estado local con el nuevo usuario con nombre
+      setUser({
+        id: userCredential.user.uid,
+        username,
+        email: userCredential.user.email || "",
+      })
+    }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    await auth.signOut()
     setUser(null)
-    // Borra token si usas
+  }
+
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email)
   }
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -72,11 +84,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!res.ok) throw new Error("Error al subir imagen a Cloudinary")
 
     const data = await res.json()
-    return data.secure_url // URL accesible de la imagen subida
+    return data.secure_url
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, signup, uploadImage }}>
+    <AuthContext.Provider value={{ user, signIn, signUp, logout, resetPassword, uploadImage }}>
       {children}
     </AuthContext.Provider>
   )
