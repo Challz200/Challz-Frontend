@@ -1,135 +1,121 @@
-"use client"
+import React, { createContext, useContext, useState, useEffect } from "react"
 
-import type React from "react"
-
-import { createContext, useContext, useEffect, useState } from "react"
-import {
-  type User,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-<<<<<<< HEAD
-=======
-  sendPasswordResetEmail,
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
-} from "firebase/auth"
-import { auth, isFirebaseConfigured } from "@/lib/firebase"
-
-type AuthContextType = {
-  user: User | null
-  loading: boolean
-  isConfigured: boolean
-  signUp: (email: string, password: string, username: string) => Promise<void>
-  signIn: (email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-<<<<<<< HEAD
-=======
-  resetPassword: (email: string) => Promise<void>
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
+interface User {
+  id: string
+  username: string
+  email: string
+  // otros campos que uses en tu usuario
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  isConfigured: false,
-  signUp: async () => {},
-  signIn: async () => {},
-  logout: async () => {},
-<<<<<<< HEAD
-=======
-  resetPassword: async () => {},
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
-})
+interface AuthContextType {
+  user: User | null
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (username: string, email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
+  uploadImage: (file: File) => Promise<string>
+}
 
-export const useAuth = () => useContext(AuthContext)
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const configured = isFirebaseConfigured()
 
   useEffect(() => {
-    if (!configured || !auth) {
-      setLoading(false)
-      return
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user)
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
-  }, [configured])
-
-  const signUp = async (email: string, password: string, username: string) => {
-    if (!configured || !auth) {
-      throw new Error("Firebase no está configurado")
-    }
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      // Update the user profile with the username
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
-          displayName: username,
-        })
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/auth/me")
+        if (res.ok) {
+          const data = await res.json()
+          setUser(data.user)
+        } else {
+          setUser(null)
+        }
+      } catch {
+        setUser(null)
       }
-    } catch (error) {
-      console.error("Error signing up:", error)
-      throw error
     }
-  }
+    fetchUser()
+  }, [])
 
   const signIn = async (email: string, password: string) => {
-    if (!configured || !auth) {
-      throw new Error("Firebase no está configurado")
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.message || "Error al iniciar sesión")
     }
+    const data = await res.json()
+    setUser(data.user)
+    // Guarda token localmente si es necesario
+  }
 
-    try {
-      await signInWithEmailAndPassword(auth, email, password)
-    } catch (error) {
-      console.error("Error signing in:", error)
-      throw error
+  const signUp = async (username: string, email: string, password: string) => {
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password }),
+    })
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.message || "Error al registrarse")
     }
+    const data = await res.json()
+    setUser(data.user)
   }
 
   const logout = async () => {
-    if (!configured || !auth) {
-      throw new Error("Firebase no está configurado")
-    }
-
-    try {
-      await signOut(auth)
-    } catch (error) {
-      console.error("Error signing out:", error)
-      throw error
-    }
+    await fetch("/api/auth/logout", { method: "POST" })
+    setUser(null)
+    // Limpia tokens locales si es necesario
   }
 
-<<<<<<< HEAD
-  return (
-    <AuthContext.Provider value={{ user, loading, isConfigured: configured, signUp, signIn, logout }}>
-=======
   const resetPassword = async (email: string) => {
-    if (!configured || !auth) {
-      throw new Error("Firebase no está configurado")
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.message || "Error al solicitar cambio de contraseña")
     }
+    // Puedes mostrar mensaje de éxito si quieres
+  }
 
-    try {
-      await sendPasswordResetEmail(auth, email)
-    } catch (error) {
-      console.error("Error sending password reset email:", error)
-      throw error
-    }
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "")
+    formData.append("folder", "tu_carpeta")
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    )
+
+    if (!res.ok) throw new Error("Error al subir imagen a Cloudinary")
+
+    const data = await res.json()
+    return data.secure_url
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, isConfigured: configured, signUp, signIn, logout, resetPassword }}>
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
+    <AuthContext.Provider value={{ user, signIn, signUp, logout, resetPassword, uploadImage }}>
       {children}
     </AuthContext.Provider>
   )
 }
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext)
+  if (!context) throw new Error("useAuth debe usarse dentro de AuthProvider")
+  return context
+        }
+  
