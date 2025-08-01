@@ -1,19 +1,12 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef } from "react"
+import React, { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Camera, ImageIcon, Mic, Loader2, X } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-<<<<<<< HEAD
-import { uploadMediaBackend } from "@/lib/api-backend"
-import type { MediaType } from "@/lib/media-service"
-=======
 import { uploadMedia, type MediaType } from "@/lib/media-service"
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 
@@ -41,7 +34,6 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
       const selectedFile = e.target.files[0]
       setFile(selectedFile)
 
-      // Create preview for images
       if (mediaType === "image" && selectedFile.type.startsWith("image/")) {
         const reader = new FileReader()
         reader.onload = (event) => {
@@ -49,11 +41,9 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
         }
         reader.readAsDataURL(selectedFile)
       } else if (mediaType === "video" && selectedFile.type.startsWith("video/")) {
-        // For videos, we could create a thumbnail, but for simplicity we'll just set the file
-        setPreview(null)
+        setPreview(null) // No preview thumbnail implemented yet
       } else {
-        // For audio, no preview
-        setPreview(null)
+        setPreview(null) // For audio or other types, no preview
       }
     }
   }
@@ -79,18 +69,6 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
       setError("")
 
       const hashtagArray = hashtags
-<<<<<<< HEAD
-        .split(/[\,\s]+/)
-        .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
-        .filter((tag) => tag.length > 1)
-
-      await uploadMediaBackend({
-        file,
-        title,
-        description,
-        hashtags: hashtagArray,
-        type: mediaType,
-=======
         .split(/[,\s]+/)
         .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
         .filter((tag) => tag.length > 1)
@@ -100,36 +78,24 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
         description,
         type: mediaType,
         hashtags: hashtagArray,
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
         challengeId,
         challengeTitle,
       })
 
-<<<<<<< HEAD
-=======
-      // Reset form
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
+      // Reset form after successful upload
       setFile(null)
       setPreview(null)
       setTitle("")
       setDescription("")
       setHashtags("")
 
-<<<<<<< HEAD
-=======
-      // Call success callback if provided
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
       if (onSuccess) {
         onSuccess()
       }
 
-<<<<<<< HEAD
-=======
-      // Redirect to profile
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
       router.push("/profile")
-    } catch (error) {
-      console.error("Error uploading media:", error)
+    } catch (err) {
+      console.error("Error uploading media:", err)
       setError("Ocurrió un error al subir el archivo. Por favor intenta de nuevo.")
     } finally {
       setIsUploading(false)
@@ -152,10 +118,13 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
     <div className="space-y-6">
       <div className="flex justify-center mb-4">
         <div className="flex bg-zinc-900 rounded-lg p-1">
+          {/* Media type selector buttons */}
           <button
             onClick={() => setMediaType("video")}
             className={`flex items-center px-4 py-2 rounded-lg ${
-              mediaType === "video" ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" : "text-zinc-400"
+              mediaType === "video"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                : "text-zinc-400"
             }`}
           >
             <Camera className="h-4 w-4 mr-2" />
@@ -164,7 +133,9 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
           <button
             onClick={() => setMediaType("image")}
             className={`flex items-center px-4 py-2 rounded-lg ${
-              mediaType === "image" ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" : "text-zinc-400"
+              mediaType === "image"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                : "text-zinc-400"
             }`}
           >
             <ImageIcon className="h-4 w-4 mr-2" />
@@ -173,7 +144,9 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
           <button
             onClick={() => setMediaType("audio")}
             className={`flex items-center px-4 py-2 rounded-lg ${
-              mediaType === "audio" ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" : "text-zinc-400"
+              mediaType === "audio"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                : "text-zinc-400"
             }`}
           >
             <Mic className="h-4 w-4 mr-2" />
@@ -190,7 +163,7 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
 
           {preview && mediaType === "image" ? (
             <div className="relative h-64 w-full">
-              <Image src={preview || "/placeholder.svg"} alt="Preview" fill className="object-contain" />
+              <Image src={preview} alt="Preview" fill className="object-contain" />
             </div>
           ) : (
             <div className="py-8">
@@ -208,7 +181,13 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept={mediaType === "video" ? "video/*" : mediaType === "image" ? "image/*" : "audio/*"}
+            accept={
+              mediaType === "video"
+                ? "video/*"
+                : mediaType === "image"
+                ? "image/*"
+                : "audio/*"
+            }
             className="hidden"
           />
           <div className="flex flex-col items-center justify-center">
@@ -217,9 +196,11 @@ export default function MediaUpload({ challengeId, challengeTitle, onSuccess }: 
             {mediaType === "audio" && <Mic className="h-12 w-12 text-zinc-500 mb-4" />}
 
             <h3 className="font-medium mb-2">
-              {mediaType === "video" && "Sube tu video"}
-              {mediaType === "image" && "Sube tu foto"}
-              {mediaType === "audio" && "Sube tu audio"}
+              {mediaType === "video"
+                ? "Sube tu video"
+                : mediaType === "image"
+                ? "Sube tu foto"
+                : "Sube tu audio"}
             </h3>
             <p className="text-zinc-500 text-sm mb-4">Arrastra y suelta o haz clic para seleccionar</p>
             <Button className="bg-zinc-800 hover:bg-zinc-700">
