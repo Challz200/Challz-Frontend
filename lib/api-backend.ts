@@ -7,7 +7,7 @@ if (!API_URL) {
 const TOKEN_KEY = "auth_token";
 
 /** Guarda token JWT en almacenamiento local */
-export function setToken(token: string) {
+export function saveToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
@@ -65,7 +65,9 @@ export async function apiFetch(
   return res.json();
 }
 
-// Ejemplo de función para login
+// --- Funciones específicas para endpoints comunes ---
+
+// Login de usuario y retorno de token + datos
 export async function login(email: string, password: string) {
   return apiFetch("/auth/login", {
     method: "POST",
@@ -73,7 +75,66 @@ export async function login(email: string, password: string) {
   });
 }
 
-// Ejemplo de función para obtener perfil protegido
+// Registro de usuario nuevo
+export async function registerUser(user: { username: string; email: string; password: string }) {
+  return apiFetch("/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(user),
+  });
+}
+
+// Logout (si backend lo requiere)
+export async function logout() {
+  return apiFetch("/auth/logout", {
+    method: "POST",
+  }, true);
+}
+
+// Obtener perfil de usuario autenticado
 export async function getUserProfile() {
   return apiFetch("/user/profile", { method: "GET" }, true);
 }
+
+// Obtener media por ID
+export async function fetchMediaById(id: string) {
+  return apiFetch(`/media/${id}`, { method: "GET" }, false);
+}
+
+// Obtener comentarios para media
+export async function fetchCommentsByMediaId(mediaId: string) {
+  return apiFetch(`/media/${mediaId}/comments`, { method: "GET" }, false);
+}
+
+// Agregar comentario a media
+export async function postComment(
+  mediaId: string,
+  comment: {
+    userId: string;
+    username: string;
+    userPhotoURL?: string;
+    text: string;
+    createdAt: string;
+  }
+) {
+  return apiFetch(
+    `/media/${mediaId}/comments`,
+    {
+      method: "POST",
+      body: JSON.stringify(comment),
+    },
+    true
+  );
+}
+
+// Obtener medios de usuario
+export async function getUserMedia(userId: string) {
+  return apiFetch(`/users/${userId}/media`, { method: "GET" }, false);
+}
+
+// Obtener medios trending
+export async function getTrendingMedia() {
+  return apiFetch(`/media/trending`, { method: "GET" }, false);
+}
+
+// Puedes agregar más funciones específicas a tu API según lo necesites
+
