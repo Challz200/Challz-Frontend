@@ -1,29 +1,46 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { ArrowLeft, Heart, MessageCircle, MoreVertical, Share2, Music, Loader2 } from "lucide-react"
+import React, { useEffect, useState } from "react"
+import {
+  ArrowLeft,
+  Heart,
+  MessageCircle,
+  MoreVertical,
+  Share2,
+  Music,
+  Loader2,
+} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, Timestamp } from "firebase/firestore"
-import { db } from "@/lib/firebase"
 import { useAuth } from "@/contexts/auth-context"
 import { incrementMediaStats, type MediaItem } from "@/lib/media-service"
 import { useRouter } from "next/navigation"
 import { AppIcon } from "@/components/app-icon"
+import { fetchMediaById, fetchCommentsByMediaId, postComment } from "@/lib/api-backend"
 
+/**
+ * Tipo para comentarios.
+ * El campo createdAt es string ISO (para simplificar serialización).
+ */
 interface Comment {
   id: string
   userId: string
   username: string
   userPhotoURL?: string
   text: string
-  createdAt: Timestamp
+  createdAt: string
 }
 
+/**
+ * Página de detalle de media con comentarios y acciones.
+ * 
+ * Migrado a consumir API backend centralizada en lib/api-backend.ts,
+ * sin llamadas directas a Firebase.
+ */
 export default function MediaDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth()
   const router = useRouter()
@@ -34,37 +51,25 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    async function fetchMediaAndComments() {
+    async function fetchData() {
       try {
         setLoading(true)
 
-        // Fetch media details
-        const mediaDoc = await getDoc(doc(db, "media", params.id))
-        if (!mediaDoc.exists()) {
-          console.error("Media not found")
+        // Obtener media desde API backend
+        const mediaData = await fetchMediaById(params.id)
+
+        if (!mediaData) {
           router.push("/")
           return
         }
 
-        const mediaData = { id: mediaDoc.id, ...mediaDoc.data() } as MediaItem
         setMedia(mediaData)
 
-        // Increment view count
+        // Incrementar contador de vistas (usando media-service.ts)
         await incrementMediaStats(params.id, "views")
 
-        // Fetch comments
-        const commentsQuery = query(
-          collection(db, "comments"),
-          where("mediaId", "==", params.id),
-          orderBy("createdAt", "desc"),
-        )
-
-        const commentsSnapshot = await getDocs(commentsQuery)
-        const commentsData = commentsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Comment[]
-
+        // Obtener comentarios del media
+        const commentsData = await fetchCommentsByMediaId(params.id)
         setComments(commentsData)
       } catch (error) {
         console.error("Error fetching media details:", error)
@@ -73,9 +78,10 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
       }
     }
 
-    fetchMediaAndComments()
+    fetchData()
   }, [params.id, router])
 
+  // Función para "like"
   const handleLike = async () => {
     if (!user) {
       router.push("/auth/login")
@@ -92,30 +98,26 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     }
   }
 
+  // Función para agregar comentario nuevo
   const handleAddComment = async () => {
-    if (!user || !commentText.trim() || !media) {
-      return
-    }
+    if (!user || !commentText.trim() || !media) return
 
     try {
       setSubmitting(true)
 
-      const newComment = {
-        mediaId: media.id,
+      // Crear comentario nuevo con API
+      const newComment = await postComment(media.id, {
         userId: user.uid,
         username: user.displayName || "Usuario",
         userPhotoURL: user.photoURL || "",
         text: commentText.trim(),
-        createdAt: Timestamp.now(),
-      }
+        createdAt: new Date().toISOString(),
+      })
 
-      const commentRef = await addDoc(collection(db, "comments"), newComment)
-
-      // Increment comment count
       await incrementMediaStats(media.id, "comments")
 
-      // Update UI
-      setComments((prev) => [{ id: commentRef.id, ...newComment }, ...prev])
+      // Actualizar UI
+      setComments((prev) => [newComment, ...prev])
       setMedia((prev) => (prev ? { ...prev, comments: prev.comments + 1 } : null))
       setCommentText("")
     } catch (error) {
@@ -125,9 +127,10 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     }
   }
 
-  const formatTimestamp = (timestamp: Timestamp) => {
+  // Formatear fecha relativa (ejemplo "5m", "3h", "2d")
+  const formatTimestamp = (isoDate: string) => {
     const now = new Date()
-    const commentDate = timestamp.toDate()
+    const commentDate = new Date(isoDate)
     const diffInSeconds = Math.floor((now.getTime() - commentDate.getTime()) / 1000)
 
     if (diffInSeconds < 60) return `${diffInSeconds}s`
@@ -191,6 +194,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     )
   }
 
+  // UI principal con detalles, comentarios, acciones...
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
@@ -208,7 +212,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
         </Button>
       </header>
 
-      {/* Main Content */}
+      {/* Contenido principal */}
       <main className="flex-1 pt-16 pb-20">
         <div className="relative h-[calc(100vh-16rem)] bg-zinc-900">
           {media.type === "image" ? (
@@ -232,19 +236,20 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
                 size="icon"
                 className="rounded-full bg-black/40 backdrop-blur-md"
                 onClick={handleLike}
+                aria-label="Me gusta"
               >
                 <Heart className="h-6 w-6" />
               </Button>
               <span className="text-xs mt-1">{media.likes}</span>
             </div>
             <div className="flex flex-col items-center">
-              <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md">
+              <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md" aria-label="Comentarios">
                 <MessageCircle className="h-6 w-6" />
               </Button>
               <span className="text-xs mt-1">{media.comments}</span>
             </div>
             <div className="flex flex-col items-center">
-              <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md">
+              <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md" aria-label="Compartir">
                 <Share2 className="h-6 w-6" />
               </Button>
               <span className="text-xs mt-1">Compartir</span>
@@ -252,6 +257,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
           </div>
         </div>
 
+        {/* Información del usuario que publicó el media */}
         <div className="p-4 border-t border-zinc-800">
           <div className="flex items-center gap-3 mb-4">
             <Avatar className="h-10 w-10 border-2 border-purple-500">
@@ -283,8 +289,8 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
             </div>
           )}
 
+          {/* Sección de comentarios */}
           <h3 className="font-medium mb-3">Comentarios ({media.comments})</h3>
-
           <div className="space-y-4 mb-4">
             {comments.length > 0 ? (
               comments.map((comment) => (
@@ -347,14 +353,17 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
                       handleAddComment()
                     }
                   }}
+                  aria-label="Comentario"
                 />
                 <Button
                   size="sm"
                   className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white"
                   onClick={handleAddComment}
                   disabled={submitting || !commentText.trim()}
+                  aria-disabled={submitting || !commentText.trim()}
+                  aria-label="Publicar comentario"
                 >
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Publicar"}
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : "Publicar"}
                 </Button>
               </div>
             </div>
@@ -372,3 +381,4 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     </div>
   )
 }
+
