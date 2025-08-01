@@ -1,18 +1,21 @@
+"use client"
+
 import React, { createContext, useContext, useState, useEffect } from "react"
 
 /**
- * Tipo que representa un usuario autenticado.
- * Puedes extenderlo con más campos según tu modelo.
+ * Tipo que define la estructura del usuario
+ * Puedes extender con los campos que use tu sistema
  */
 interface User {
   id: string
   username: string
   email: string
-  // otros campos que uses en tu usuario
+  // Otros campos adicionales si requieres
 }
 
 /**
- * Tipo que define los métodos y el estado expuestos en el contexto de autenticación.
+ * Define la forma del contexto de autenticación
+ * incluyendo funciones para login, registro, logout, etc.
  */
 interface AuthContextType {
   user: User | null
@@ -26,13 +29,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 /**
- * Proveedor de contexto de autenticación.
- * Encapsula estados y métodos para el login, registro, logout, etc.
+ * Provider del contexto de autenticación.
+ * Controla estado y funciones de usuario y autenticación.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
 
-  // Al montar, intenta obtener la sesión/usuario actual desde el backend
+  // Al montar, intenta obtener el usuario actual desde API
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -52,7 +55,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   /**
    * Función para iniciar sesión.
-   * Llama la API y actualiza el usuario en estado.
+   * Llama la API y actualiza estado de usuario.
+   * Debe gestionar tokens (cookies o localStorage) si aplica.
    */
   const signIn = async (email: string, password: string) => {
     const res = await fetch("/api/auth/login", {
@@ -60,13 +64,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     })
+
     if (!res.ok) {
       const errorData = await res.json()
       throw new Error(errorData.message || "Error al iniciar sesión")
     }
+
     const data = await res.json()
     setUser(data.user)
-    // Aquí podrías guardar token en localStorage/cookie si es necesario
+    // Guarda token si es necesario (e.g. localStorage, cookie)
   }
 
   /**
@@ -78,26 +84,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password }),
     })
+
     if (!res.ok) {
       const errorData = await res.json()
       throw new Error(errorData.message || "Error al registrarse")
     }
+
     const data = await res.json()
     setUser(data.user)
+    // Guarda token si es necesario
   }
 
   /**
    * Función para cerrar sesión.
-   * Limpia datos de usuario local y notifica al backend.
+   * Llama a backend si es necesario y limpia estado y credenciales locales.
    */
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" })
     setUser(null)
-    // Limpia tokens o cookies locales si usas
+    // Limpia tokens locales o cookies si las usas
   }
 
   /**
-   * Solicita cambio de contraseña enviando el email al backend.
+   * Solicita restablecimiento de contraseña enviando correo al backend.
    */
   const resetPassword = async (email: string) => {
     const res = await fetch("/api/auth/reset-password", {
@@ -105,22 +114,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     })
+
     if (!res.ok) {
       const errorData = await res.json()
       throw new Error(errorData.message || "Error al solicitar cambio de contraseña")
     }
-    // Puedes gestionar mensaje o estado en el componente que llame esta función
+    // Opcional: puede devolver mensaje o ser manejado en componente receptor
   }
 
   /**
-   * Sube una imagen a Cloudinary usando fetch.
-   * Retorna la URL segura de la imagen subida.
+   * Sube una imagen a Cloudinary y retorna la URL segura.
    */
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append("file", file)
     formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "")
-    formData.append("folder", "tu_carpeta") // Cambia "tu_carpeta" por la carpeta deseada en Cloudinary
+    formData.append("folder", "tu_carpeta") // Cambiar por la carpeta deseada en Cloudinary
 
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
@@ -144,13 +153,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 }
 
 /**
- * Hook para usar el contexto de autenticación.
- * Lanza error si se usa fuera del AuthProvider.
+ * Hook para consumir el contexto de autenticación.
+ * Lanza error si se usa fuera del Provider.
  */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext)
   if (!context) throw new Error("useAuth debe usarse dentro de AuthProvider")
   return context
 }
-
-  
