@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-<<<<<<< HEAD
-import { ArrowLeft, Edit, Settings } from "lucide-react"
-=======
-import { ArrowLeft, Edit, Settings, AlertTriangle } from "lucide-react"
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
+import React, { useEffect, useState } from "react"
+import {
+  ArrowLeft,
+  Edit,
+  Settings,
+  AlertTriangle,
+} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -16,37 +17,39 @@ import { useAuth } from "@/contexts/auth-context"
 import { getUserMedia, type MediaItem } from "@/lib/media-service"
 import ProtectedRoute from "@/components/protected-route"
 import { Skeleton } from "@/components/ui/skeleton"
-<<<<<<< HEAD
-
-export default function ProfilePage() {
-  const { user } = useAuth()
-  const [userMedia, setUserMedia] = useState<MediaItem[]>([])
-  const [loading, setLoading] = useState(true)
-
-=======
 import { useSearchParams } from "next/navigation"
 
+/**
+ * Página de perfil de usuario.
+ * 
+ * Permite visualizar el perfil propio o de otro usuario, con sus medios (retos).
+ * Utiliza hook `useAuth` para usuario actual,
+ * y `getUserMedia` para obtener medios desde el backend mediante `media-service`.
+ * 
+ * Presenta pestañas para retos personales, creados y guardados (estos últimos solo visibles para perfil propio).
+ * 
+ * Incluye funcionalidad para reportar perfil si se visualiza uno que no es propio.
+ * 
+ * Mantiene diseño y colores originales, con lógica tersa y comentarios para colaboradores.
+ */
 export default function ProfilePage() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
-  const [userMedia, setUserMedia] = useState<MediaItem[]>([])
-  const [loading, setLoading] = useState(true)
 
-  // Check if viewing another user's profile
+  // Obtenemos userId de perfil a visualizar (consulta en URL)
   const profileUserId = searchParams.get("userId")
   const isOwnProfile = !profileUserId || profileUserId === user?.uid
 
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
+  const [userMedia, setUserMedia] = useState<MediaItem[]>([])
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     async function fetchUserMedia() {
       if (user) {
         try {
           setLoading(true)
-<<<<<<< HEAD
-          const media = await getUserMedia(user.uid)
-=======
+          // Obtener medios del usuario perfil (propio o seleccionado)
           const media = await getUserMedia(profileUserId || user.uid)
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
           setUserMedia(media)
         } catch (error) {
           console.error("Error fetching user media:", error)
@@ -57,51 +60,41 @@ export default function ProfilePage() {
     }
 
     fetchUserMedia()
-<<<<<<< HEAD
-  }, [user])
-=======
   }, [user, profileUserId])
 
+  // Función simple para reportar perfil
   const handleReportUser = () => {
     if (confirm("¿Quieres reportar este perfil?")) {
       alert("Reporte de perfil enviado. Gracias por ayudarnos a mantener la comunidad segura.")
+      // Aquí podrías implementar lógica real para reportar al backend
     }
   }
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
 
   return (
     <ProtectedRoute>
       <div className="flex flex-col min-h-screen bg-black text-white">
-        {/* Header */}
+        {/* Header fijo */}
         <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-black/80 backdrop-blur-md border-b border-zinc-800">
           <div className="flex items-center gap-2">
             <Link href="/">
-              <Button variant="ghost" size="icon" className="text-zinc-400">
+              <Button variant="ghost" size="icon" className="text-zinc-400" aria-label="Volver a inicio">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-<<<<<<< HEAD
-            <h1 className="text-lg font-semibold">Mi Perfil</h1>
+            <h1 className="text-lg font-semibold">
+              {isOwnProfile ? "Mi Perfil" : "Perfil de Usuario"}
+            </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-zinc-400">
-              <Edit className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-zinc-400">
-              <Settings className="h-5 w-5" />
-            </Button>
-=======
-            <h1 className="text-lg font-semibold">{isOwnProfile ? "Mi Perfil" : "Perfil de Usuario"}</h1>
-          </div>
+
           <div className="flex items-center gap-3">
             {isOwnProfile ? (
               <>
-                <Link href="/profile/edit">
+                <Link href="/profile/edit" aria-label="Editar perfil">
                   <Button variant="ghost" size="icon" className="text-zinc-400">
                     <Edit className="h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="/profile/settings">
+                <Link href="/profile/settings" aria-label="Configuración">
                   <Button variant="ghost" size="icon" className="text-zinc-400">
                     <Settings className="h-5 w-5" />
                   </Button>
@@ -113,17 +106,18 @@ export default function ProfilePage() {
                 size="icon"
                 className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
                 onClick={handleReportUser}
+                aria-label="Reportar perfil"
               >
                 <AlertTriangle className="h-5 w-5" />
               </Button>
             )}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
           </div>
         </header>
 
-        {/* Main Content */}
+        {/* Contenido principal con paddings para evitar header fijo */}
         <main className="flex-1 pt-16 pb-20">
           <div className="p-4">
+            {/* Sección de info usuario */}
             <div className="flex items-center gap-4 mb-6">
               <Avatar className="h-20 w-20 border-4 border-purple-500">
                 <AvatarImage
@@ -141,6 +135,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {/* Estadísticas sencillas */}
             <div className="flex justify-between mb-6 text-center">
               <div className="flex-1">
                 <p className="text-xl font-bold">{userMedia.length}</p>
@@ -156,17 +151,16 @@ export default function ProfilePage() {
               </div>
             </div>
 
-<<<<<<< HEAD
-=======
+            {/* Botones de acción (según sea propio perfil o ajeno) */}
             <div className="flex gap-3 mb-6">
               {isOwnProfile ? (
                 <>
-                  <Link href="/profile/edit" className="flex-1">
+                  <Link href="/profile/edit" className="flex-1" aria-label="Editar perfil">
                     <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
                       Editar perfil
                     </Button>
                   </Link>
-                  <Link href="/profile/settings" className="flex-1">
+                  <Link href="/profile/settings" className="flex-1" aria-label="Configuración de perfil">
                     <Button
                       variant="outline"
                       className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
@@ -177,12 +171,13 @@ export default function ProfilePage() {
                 </>
               ) : (
                 <>
-                  <Button className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                  <Button className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" aria-label="Seguir usuario">
                     Seguir
                   </Button>
                   <Button
                     variant="outline"
                     className="flex-1 border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+                    aria-label="Enviar mensaje"
                   >
                     Mensaje
                   </Button>
@@ -190,18 +185,14 @@ export default function ProfilePage() {
               )}
             </div>
 
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
+            {/* Pestañas para diferentes vistas */}
             <Tabs defaultValue="challenges" className="w-full">
               <TabsList className="w-full bg-zinc-900 border-b border-zinc-800 rounded-none h-12">
                 <TabsTrigger
                   value="challenges"
                   className="flex-1 data-[state=active]:bg-black data-[state=active]:text-white"
                 >
-<<<<<<< HEAD
-                  Mis Retos
-=======
                   {isOwnProfile ? "Mis Retos" : "Retos"}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
                 </TabsTrigger>
                 <TabsTrigger
                   value="created"
@@ -246,14 +237,6 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-<<<<<<< HEAD
-                    <p className="text-zinc-400">Aún no has participado en ningún reto.</p>
-                    <Link href="/">
-                      <Button className="mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                        Explorar Retos
-                      </Button>
-                    </Link>
-=======
                     <p className="text-zinc-400">
                       {isOwnProfile
                         ? "Aún no has participado en ningún reto."
@@ -266,21 +249,12 @@ export default function ProfilePage() {
                         </Button>
                       </Link>
                     )}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
                   </div>
                 )}
               </TabsContent>
 
               <TabsContent value="created" className="mt-4">
                 <div className="text-center py-8">
-<<<<<<< HEAD
-                  <p className="text-zinc-400">Aún no has creado ningún reto.</p>
-                  <Link href="/crear-reto">
-                    <Button className="mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                      Crear Reto
-                    </Button>
-                  </Link>
-=======
                   <p className="text-zinc-400">
                     {isOwnProfile ? "Aún no has creado ningún reto." : "Este usuario aún no ha creado ningún reto."}
                   </p>
@@ -291,20 +265,11 @@ export default function ProfilePage() {
                       </Button>
                     </Link>
                   )}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
                 </div>
               </TabsContent>
 
               <TabsContent value="saved" className="mt-4">
                 <div className="text-center py-8">
-<<<<<<< HEAD
-                  <p className="text-zinc-400">Aún no has guardado ningún reto.</p>
-                  <Link href="/explorar">
-                    <Button className="mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                      Explorar
-                    </Button>
-                  </Link>
-=======
                   <p className="text-zinc-400">
                     {isOwnProfile ? "Aún no has guardado ningún reto." : "Los retos guardados son privados."}
                   </p>
@@ -315,7 +280,6 @@ export default function ProfilePage() {
                       </Button>
                     </Link>
                   )}
->>>>>>> a2352e7dac0ebfeb1e0d079c1703d9a5b8a10d44
                 </div>
               </TabsContent>
             </Tabs>
