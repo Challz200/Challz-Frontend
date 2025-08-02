@@ -1,3 +1,6 @@
+"use client"
+
+import React from "react"
 import { ArrowLeft, Heart, Share2, Users } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -7,20 +10,32 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 
-export default function RetoPage({ params }: { params: { id: string } }) {
+/**
+ * Página de detalle de reto.
+ * 
+ * Nota importante para Next.js 15:
+ * El componente se exporta como async y recibe params como Promise,
+ * por eso se debe hacer await para obtener el id parámetro.
+ */
+export default async function RetoPage({ params }: { params: Promise<{ id: string }> }) {
+  // Resolvemos la promesa de params para obtener el id
+  const { id } = await params
+
+  // Puedes usar id en cualquier parte del componente si lo necesitas
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-black/80 backdrop-blur-md border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <Link href="/">
-            <Button variant="ghost" size="icon" className="text-zinc-400">
+            <Button variant="ghost" size="icon" className="text-zinc-400" aria-label="Volver al inicio">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <h1 className="text-lg font-semibold">Detalles del Reto</h1>
         </div>
-        <Button variant="ghost" size="icon" className="text-zinc-400">
+        <Button variant="ghost" size="icon" className="text-zinc-400" aria-label="Compartir">
           <Share2 className="h-5 w-5" />
         </Button>
       </header>
@@ -185,3 +200,4 @@ export default function RetoPage({ params }: { params: { id: string } }) {
     </div>
   )
 }
+
