@@ -9,13 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-interface PageProps {
-  params: {
-    id: string
-  }
-}
-
-export default function AceptarRetoPage({ params }: PageProps) {
+export default function AceptarRetoPage({ params }: { params: { id: string } }) {
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
