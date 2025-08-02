@@ -1,3 +1,6 @@
+"use client"
+
+import React from "react"
 import { ArrowLeft, Heart, MessageCircle, MoreVertical, Share2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -6,13 +9,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
-export default function RespuestaPage({ params }: { params: { id: string } }) {
+/**
+ * Página de respuesta al reto.
+ * 
+ * Nota importante Next.js 15:
+ * El componente es async y recibe params como Promise,
+ * por eso debes hacer await params para obtener el id dinámico y que compile sin errores.
+ */
+export default async function RespuestaPage({ params }: { params: Promise<{ id: string }> }) {
+  // Resolvemos el parámetro asincrónico para obtener el id real
+  const { id } = await params
+
+  // Uso del id está aquí por si quieres usarlo en lógica futura:
+  // Actualmente tu layout no lo usa, pero es obligatorio para que no haya error.
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-black/80 backdrop-blur-md border-b border-zinc-800">
         <div className="flex items-center gap-2">
-          <Link href="/reto/1">
+          {/* Usar href dinámico si quieres aquí con id */}
+          <Link href={`/reto/1`}>
             <Button variant="ghost" size="icon" className="text-zinc-400">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -32,7 +49,7 @@ export default function RespuestaPage({ params }: { params: { id: string } }) {
           <div className="absolute right-4 top-4 z-10 flex flex-col items-center gap-6">
             <div className="flex flex-col items-center">
               <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md">
-                <Heart className="h-6 w-6" />
+                <Heart className="h-6 w-6" /> 
               </Button>
               <span className="text-xs mt-1">1.2k</span>
             </div>
