@@ -40,23 +40,36 @@ interface Comment {
  * 
  * Migrado a consumir API backend centralizada en lib/api-backend.ts,
  * sin llamadas directas a Firebase.
+ * 
+ * NOTA técnica para Next.js 15:
+ * El componente es async y recibe params como Promise,
+ * debes hacer await params para obtener id y evitar errores TS.
  */
-export default function MediaDetailPage({ params }: { params: { id: string } }) {
+export default async function MediaDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  // Resolvemos el Promise para obtener el id dinámico
+  const { id } = await params
+
   const { user } = useAuth()
   const router = useRouter()
+
   const [media, setMedia] = useState<MediaItem | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [commentText, setCommentText] = useState("")
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
+  // Cargamos media y comentarios al montar y cuando cambia el id
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
 
-        // Obtener media desde API backend
-        const mediaData = await fetchMediaById(params.id)
+        // Obtener detalle del media desde el backend
+        const mediaData = await fetchMediaById(id)
 
         if (!mediaData) {
           router.push("/")
@@ -65,11 +78,11 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
 
         setMedia(mediaData)
 
-        // Incrementar contador de vistas (usando media-service.ts)
-        await incrementMediaStats(params.id, "views")
+        // Incrementar contador de vistas usando media-service
+        await incrementMediaStats(id, "views")
 
-        // Obtener comentarios del media
-        const commentsData = await fetchCommentsByMediaId(params.id)
+        // Obtener comentarios asociados al media
+        const commentsData = await fetchCommentsByMediaId(id)
         setComments(commentsData)
       } catch (error) {
         console.error("Error fetching media details:", error)
@@ -79,7 +92,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     }
 
     fetchData()
-  }, [params.id, router])
+  }, [id, router])
 
   // Función para "like"
   const handleLike = async () => {
@@ -105,7 +118,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     try {
       setSubmitting(true)
 
-      // Crear comentario nuevo con API
+      // Crear comentario nuevo con API backend
       const newComment = await postComment(media.id, {
         userId: user.uid,
         username: user.displayName || "Usuario",
@@ -116,7 +129,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
 
       await incrementMediaStats(media.id, "comments")
 
-      // Actualizar UI
+      // Actualizar UI: nuevos comentarios y contador
       setComments((prev) => [newComment, ...prev])
       setMedia((prev) => (prev ? { ...prev, comments: prev.comments + 1 } : null))
       setCommentText("")
@@ -127,7 +140,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     }
   }
 
-  // Formatear fecha relativa (ejemplo "5m", "3h", "2d")
+  // Formateo simple de fecha relativa para mostrar en comentarios
   const formatTimestamp = (isoDate: string) => {
     const now = new Date()
     const commentDate = new Date(isoDate)
@@ -139,6 +152,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     return `${Math.floor(diffInSeconds / 86400)}d`
   }
 
+  // UI mientras carga el contenido
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-black text-white">
@@ -166,6 +180,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     )
   }
 
+  // UI si no se encuentra el media
   if (!media) {
     return (
       <div className="flex flex-col min-h-screen bg-black text-white">
@@ -194,29 +209,36 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
     )
   }
 
-  // UI principal con detalles, comentarios, acciones...
+  // UI PRINCIPAL CON CONTENIDO Y ACCIONES
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
-      {/* Header */}
+      {/* Cabecera fija con título y botón más opciones */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-black/80 backdrop-blur-md border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <Link href="/">
-            <Button variant="ghost" size="icon" className="text-zinc-400">
+            <Button variant="ghost" size="icon" className="text-zinc-400" aria-label="Volver al inicio">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <h1 className="text-lg font-semibold">{media.title}</h1>
         </div>
-        <Button variant="ghost" size="icon" className="text-zinc-400">
+        <Button variant="ghost" size="icon" className="text-zinc-400" aria-label="Más opciones">
           <MoreVertical className="h-5 w-5" />
         </Button>
       </header>
 
-      {/* Contenido principal */}
+      {/* Contenido principal: media, estadísticas, usuario y comentarios */}
       <main className="flex-1 pt-16 pb-20">
         <div className="relative h-[calc(100vh-16rem)] bg-zinc-900">
+          {/* Renderizado según tipo de media */}
           {media.type === "image" ? (
-            <Image src={media.mediaUrl || "/placeholder.svg"} alt={media.title} fill className="object-contain" />
+            <Image
+              src={media.mediaUrl || "/placeholder.svg"}
+              alt={media.title}
+              fill
+              className="object-contain"
+              priority
+            />
           ) : media.type === "video" ? (
             <video src={media.mediaUrl} controls autoPlay className="w-full h-full object-contain" />
           ) : (
@@ -229,6 +251,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
             </div>
           )}
 
+          {/* Botones con estadísticas (likes, comentarios, compartir) */}
           <div className="absolute right-4 top-4 z-10 flex flex-col items-center gap-6">
             <div className="flex flex-col items-center">
               <Button
@@ -257,7 +280,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
           </div>
         </div>
 
-        {/* Información del usuario que publicó el media */}
+        {/* Info del usuario que posteó el media */}
         <div className="p-4 border-t border-zinc-800">
           <div className="flex items-center gap-3 mb-4">
             <Avatar className="h-10 w-10 border-2 border-purple-500">
@@ -279,6 +302,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
 
           <p className="text-sm mb-3">{media.description}</p>
 
+          {/* Hashtags */}
           {media.hashtags && media.hashtags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               {media.hashtags.map((tag, index) => (
@@ -289,7 +313,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
             </div>
           )}
 
-          {/* Sección de comentarios */}
+          {/* Sección comentarios */}
           <h3 className="font-medium mb-3">Comentarios ({media.comments})</h3>
           <div className="space-y-4 mb-4">
             {comments.length > 0 ? (
@@ -332,6 +356,7 @@ export default function MediaDetailPage({ params }: { params: { id: string } }) 
             )}
           </div>
 
+          {/* Formulario para comentar si está logueado el usuario */}
           {user ? (
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
