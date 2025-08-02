@@ -22,8 +22,14 @@ export function clearToken() {
 }
 
 /**
- * Hace fetch centralizado al backend, agregando el JWT si existe y usando la URL base del entorno.
- * Lanza excepción si la respuesta es error o si falta el token para rutas protegidas.
+ * Función central para hacer peticiones al backend.
+ * Añade token si la ruta requiere autenticación.
+ * Lanza error con mensaje adecuado si la respuesta no es OK.
+ *
+ * @param endpoint Ruta del endpoint relativo a API_URL (ej: "/auth/login").
+ * @param options Opciones de fetch.
+ * @param authRequired Si es true, incluye el token en header Authorization.
+ * @returns JSON parseado del response, o null si status 204.
  */
 export async function apiFetch(
   endpoint: string,
@@ -41,7 +47,7 @@ export async function apiFetch(
     if (!token) throw new Error("No autenticado");
     headers = {
       ...headers,
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     };
   }
 
@@ -51,15 +57,17 @@ export async function apiFetch(
     let errorMsg = "Error desconocido";
     try {
       const data = await res.json();
+      // El backend debería responder con { error: "...", message: "..." } idealmente
       errorMsg = data.error || data.message || errorMsg;
     } catch {
-      // No JSON en respuesta
+      // La respuesta no pudo interpretarse como JSON, dejamos mensaje genérico
     }
     throw new Error(errorMsg);
   }
 
+  // Código 204 significa "No Content"
   if (res.status === 204) {
-    return null; // Sin contenido
+    return null;
   }
 
   return res.json();
@@ -67,7 +75,12 @@ export async function apiFetch(
 
 // --- Funciones específicas para endpoints comunes ---
 
-// Login de usuario y retorno de token + datos
+/**
+ * Login de usuario.
+ * @param email 
+ * @param password 
+ * @returns Objeto con token y datos de usuario (según backend)
+ */
 export async function login(email: string, password: string) {
   return apiFetch("/auth/login", {
     method: "POST",
@@ -75,7 +88,11 @@ export async function login(email: string, password: string) {
   });
 }
 
-// Registro de usuario nuevo
+/**
+ * Registro de usuario nuevo.
+ * @param user Objeto usuario { username, email, password }
+ * @returns Datos o confirmación del usuario.
+ */
 export async function registerUser(user: { username: string; email: string; password: string }) {
   return apiFetch("/auth/signup", {
     method: "POST",
@@ -83,29 +100,41 @@ export async function registerUser(user: { username: string; email: string; pass
   });
 }
 
-// Logout (si backend lo requiere)
+/**
+ * Logout del usuario (si backend lo soporta).
+ */
 export async function logout() {
   return apiFetch("/auth/logout", {
     method: "POST",
   }, true);
 }
 
-// Obtener perfil de usuario autenticado
+/**
+ * Obtiene perfil del usuario autenticado.
+ */
 export async function getUserProfile() {
   return apiFetch("/user/profile", { method: "GET" }, true);
 }
 
-// Obtener media por ID
+/**
+ * Obtiene media por id.
+ * @param id id del media
+ */
 export async function fetchMediaById(id: string) {
   return apiFetch(`/media/${id}`, { method: "GET" }, false);
 }
 
-// Obtener comentarios para media
+/**
+ * Obtiene comentarios de media específico.
+ * @param mediaId id del media
+ */
 export async function fetchCommentsByMediaId(mediaId: string) {
   return apiFetch(`/media/${mediaId}/comments`, { method: "GET" }, false);
 }
 
-// Agregar comentario a media
+/**
+ * Añade comentario a un medio.
+ */
 export async function postComment(
   mediaId: string,
   comment: {
@@ -126,15 +155,20 @@ export async function postComment(
   );
 }
 
-// Obtener medios de usuario
+/**
+ * Obtiene medios de un usuario.
+ * @param userId id del usuario
+ */
 export async function getUserMedia(userId: string) {
   return apiFetch(`/users/${userId}/media`, { method: "GET" }, false);
 }
 
-// Obtener medios trending
+/**
+ * Obtiene media trending.
+ */
 export async function getTrendingMedia() {
   return apiFetch(`/media/trending`, { method: "GET" }, false);
 }
 
-// Puedes agregar más funciones específicas a tu API según lo necesites
+// Puedes agregar más funciones específicas a tu API según lo necesites.
 
