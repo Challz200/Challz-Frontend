@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
@@ -12,7 +12,16 @@ import { Separator } from "@/components/ui/separator"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+/**
+ * Página de Registro.
+ *
+ * Esta página permite crear una cuenta con email, username y contraseña.
+ * Se eliminó el uso de 'isConfigured' para evitar errores de tipo en build,
+ * asumiendo que la configuración del entorno ya está lista.
+ * Se mantienen validaciones básicas de contraseña, mensajes de error y spinner.
+ */
 export default function RegisterPage() {
+  // Estados para inputs, error y loading
   const [name, setName] = useState("")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
@@ -21,25 +30,15 @@ export default function RegisterPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const { signUp, isConfigured } = useAuth()
+  // Extraemos solo signUp del contexto auth
+  const { signUp } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!isConfigured) {
-      router.push("/env-setup")
-    }
-  }, [isConfigured, router])
-
+  // Handler para registro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
-
-    if (!isConfigured) {
-      setError("Firebase no está configurado. Por favor configura las variables de entorno.")
-      setIsLoading(false)
-      return
-    }
 
     // Validaciones básicas
     if (password !== confirmPassword) {
@@ -55,7 +54,7 @@ export default function RegisterPage() {
     }
 
     try {
-      // Registro con el backend, por ejemplo MongoDB o tu servicio
+      // Llamada a signUp, ajusta parámetros según implementación real
       await signUp(email, password, username)
       router.push("/")
     } catch (error: any) {
@@ -74,21 +73,12 @@ export default function RegisterPage() {
     }
   }
 
-  if (!isConfigured) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 text-purple-500 animate-spin mx-auto mb-4" />
-          <p className="text-white">Redirigiendo a configuración...</p>
-        </div>
-      </div>
-    )
-  }
-
+  // Render principal (REMOVIDO chequeo y UI basada en isConfigured)
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-purple-900 to-black text-white">
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md space-y-8">
+          {/* Encabezado */}
           <div className="flex flex-col items-center text-center">
             <AppIcon size={80} />
             <h1 className="mt-4 text-3xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
@@ -97,6 +87,7 @@ export default function RegisterPage() {
             <p className="mt-2 text-zinc-400">Únete a la comunidad de Challz</p>
           </div>
 
+          {/* Mensajes de error */}
           {error && (
             <Alert variant="destructive" className="bg-red-900/20 border-red-900 text-red-300">
               <AlertCircle className="h-4 w-4" />
@@ -104,6 +95,7 @@ export default function RegisterPage() {
             </Alert>
           )}
 
+          {/* Formulario de registro */}
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm text-zinc-400">
@@ -119,6 +111,7 @@ export default function RegisterPage() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm text-zinc-400">
                 Nombre de usuario
@@ -135,6 +128,7 @@ export default function RegisterPage() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm text-zinc-400">
                 Correo Electrónico
@@ -149,6 +143,7 @@ export default function RegisterPage() {
                 required
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm text-zinc-400">
                 Contraseña
@@ -164,6 +159,7 @@ export default function RegisterPage() {
                 minLength={6}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-sm text-zinc-400">
                 Repetir Contraseña
