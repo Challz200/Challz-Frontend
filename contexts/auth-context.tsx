@@ -16,9 +16,11 @@ interface User {
 /**
  * Define la forma del contexto de autenticación
  * incluyendo funciones para login, registro, logout, etc.
+ * Se agrega la propiedad `loading` para indicar estado de carga.
  */
 interface AuthContextType {
   user: User | null
+  loading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (username: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
@@ -31,9 +33,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 /**
  * Provider del contexto de autenticación.
  * Controla estado y funciones de usuario y autenticación.
+ * Ahora incluye `loading` para indicar si está cargando usuario actual.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true) // Estado de carga inicial true
 
   // Al montar, intenta obtener el usuario actual desde API
   useEffect(() => {
@@ -48,16 +52,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch {
         setUser(null)
+      } finally {
+        setLoading(false) // Carga terminada (éxito o error)
       }
     }
     fetchUser()
   }, [])
 
-  /**
-   * Función para iniciar sesión.
-   * Llama la API y actualiza estado de usuario.
-   * Debe gestionar tokens (cookies o localStorage) si aplica.
-   */
   const signIn = async (email: string, password: string) => {
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -75,9 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Guarda token si es necesario (e.g. localStorage, cookie)
   }
 
-  /**
-   * Función para registrar un usuario nuevo.
-   */
   const signUp = async (username: string, email: string, password: string) => {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
@@ -95,19 +93,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Guarda token si es necesario
   }
 
-  /**
-   * Función para cerrar sesión.
-   * Llama a backend si es necesario y limpia estado y credenciales locales.
-   */
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" })
     setUser(null)
     // Limpia tokens locales o cookies si las usas
   }
 
-  /**
-   * Solicita restablecimiento de contraseña enviando correo al backend.
-   */
   const resetPassword = async (email: string) => {
     const res = await fetch("/api/auth/reset-password", {
       method: "POST",
@@ -122,9 +113,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Opcional: puede devolver mensaje o ser manejado en componente receptor
   }
 
-  /**
-   * Sube una imagen a Cloudinary y retorna la URL segura.
-   */
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append("file", file)
@@ -146,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, logout, resetPassword, uploadImage }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, logout, resetPassword, uploadImage }}>
       {children}
     </AuthContext.Provider>
   )
