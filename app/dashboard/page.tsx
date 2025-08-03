@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-3xl mb-4">Bienvenido, {user.displayName || user.email}</h1>
+      <h1 className="text-3xl mb-4">Bienvenido, {user.username || user.email}</h1>
       <p>Este es tu dashboard protegido.</p>
     </div>
   );
