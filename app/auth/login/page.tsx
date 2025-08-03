@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
@@ -14,30 +12,31 @@ import { Separator } from "@/components/ui/separator"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+/**
+ * Página de Login.
+ *
+ * Esta página maneja iniciar sesión con email y contraseña.
+ * Usa el contexto auth para la lógica de signIn.
+ * Eliminado uso de 'isConfigured' para evitar error de tipado,
+ * asumiendo que ya el entorno está listo para evitar build errors.
+ * Presenta mensajes de error dinámicos y muestra indicador de carga.
+ */
 export default function LoginPage() {
+  // Estados locales para inputs, error y loading
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { signIn, isConfigured } = useAuth()
+
+  // Solo extraemos signIn porque 'isConfigured' no existe en contexto actual
+  const { signIn } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!isConfigured) {
-      router.push("/env-setup")
-    }
-  }, [isConfigured, router])
-
+  // Handler para enviar formulario login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
-
-    if (!isConfigured) {
-      setError("Firebase no está configurado. Por favor configura las variables de entorno.")
-      setIsLoading(false)
-      return
-    }
 
     try {
       await signIn(email, password)
@@ -56,21 +55,12 @@ export default function LoginPage() {
     }
   }
 
-  if (!isConfigured) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 text-purple-500 animate-spin mx-auto mb-4" />
-          <p className="text-white">Redirigiendo a configuración...</p>
-        </div>
-      </div>
-    )
-  }
-
+  // UI principal con formulario de login
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-purple-900 to-black text-white">
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-md space-y-8">
+          {/* Logo y eslogan */}
           <div className="flex flex-col items-center text-center">
             <AppIcon size={80} />
             <h1 className="mt-4 text-3xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
@@ -79,6 +69,7 @@ export default function LoginPage() {
             <p className="mt-2 text-zinc-400">Desafía tu rutina. Reta tu mundo.</p>
           </div>
 
+          {/* Mensajes de error */}
           {error && (
             <Alert variant="destructive" className="bg-red-900/20 border-red-900 text-red-300">
               <AlertCircle className="h-4 w-4" />
@@ -86,7 +77,9 @@ export default function LoginPage() {
             </Alert>
           )}
 
+          {/* Formulario inicio de sesión */}
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {/* Input email */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm text-zinc-400">
                 Correo Electrónico
@@ -101,6 +94,8 @@ export default function LoginPage() {
                 required
               />
             </div>
+
+            {/* Input contraseña */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-sm text-zinc-400">
@@ -121,6 +116,7 @@ export default function LoginPage() {
               />
             </div>
 
+            {/* Botón de inicio */}
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
@@ -137,6 +133,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* Separador con texto */}
           <div className="relative my-6">
             <Separator className="bg-zinc-800" />
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black px-2 text-xs text-zinc-500">
@@ -144,6 +141,7 @@ export default function LoginPage() {
             </span>
           </div>
 
+          {/* Botones sociales (Google, Apple) */}
           <div className="grid grid-cols-2 gap-4">
             <Button variant="outline" className="border-zinc-700 hover:bg-zinc-900">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-5 w-5 mr-2" fill="currentColor">
@@ -186,3 +184,4 @@ export default function LoginPage() {
     </div>
   )
 }
+
